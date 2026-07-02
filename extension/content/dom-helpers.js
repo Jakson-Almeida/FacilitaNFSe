@@ -49,81 +49,120 @@ FacilitaNFSe.setCheckbox = function (id, checked) {
 };
 
 FacilitaNFSe.updateChosen = function (selectId) {
-  if (window.jQuery) {
-    window.jQuery("#" + selectId).trigger("chosen:updated");
-    window.jQuery("#" + selectId).trigger("change");
-  }
+  var select = document.getElementById(selectId);
+  if (!select) return Promise.resolve(false);
+  return FacilitaNFSe.callPageBridge("chosenUpdate", [selectId, select.value]).catch(function () {
+    return false;
+  });
 };
 
 FacilitaNFSe.setChosenSelect = function (selectId, value) {
   var select = document.getElementById(selectId);
-  if (!select) return false;
+  if (!select) return Promise.resolve(false);
   select.value = value;
   FacilitaNFSe.dispatchInput(select);
-  FacilitaNFSe.updateChosen(selectId);
-  return true;
+  return FacilitaNFSe.callPageBridge("chosenUpdate", [selectId, value]).then(function () {
+    return true;
+  });
+};
+
+FacilitaNFSe.callPageBridge = function (action, args, timeoutMs) {
+  return new Promise(function (resolve, reject) {
+    var requestId = "fnfse_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+    var timeout = timeoutMs || 12000;
+
+    var timer = window.setTimeout(function () {
+      document.removeEventListener("FacilitaNFSeBridgeResponse", onResponse);
+      reject(new Error("Timeout ao executar ação na página: " + action));
+    }, timeout);
+
+    function onResponse(event) {
+      var detail = event.detail;
+      if (!detail || detail.id !== requestId) return;
+
+      window.clearTimeout(timer);
+      document.removeEventListener("FacilitaNFSeBridgeResponse", onResponse);
+
+      if (detail.ok) {
+        resolve(detail.result);
+      } else {
+        reject(new Error(detail.error || "Falha na ponte com a página"));
+      }
+    }
+
+    document.addEventListener("FacilitaNFSeBridgeResponse", onResponse);
+    document.dispatchEvent(
+      new CustomEvent("FacilitaNFSeBridgeRequest", {
+        detail: {
+          id: requestId,
+          action: action,
+          args: args || [],
+        },
+      })
+    );
+  });
+};
+
+FacilitaNFSe.openSelect2Dom = function (selectId) {
+  var container = document.querySelector("#select2-" + selectId + "-container");
+  if (container) {
+    container.click();
+    return true;
+  }
+
+  var select = document.getElementById(selectId);
+  if (!select) return false;
+
+  var sibling = select.nextElementSibling;
+  if (sibling && sibling.classList.contains("select2")) {
+    var selection = sibling.querySelector(".select2-selection");
+    if (selection) {
+      selection.click();
+      return true;
+    }
+  }
+
+  return false;
+};
+
+FacilitaNFSe.openSelect2 = function (selectId) {
+  return FacilitaNFSe.callPageBridge("select2Open", [selectId]).catch(function () {
+    if (FacilitaNFSe.openSelect2Dom(selectId)) return true;
+    throw new Error("Não foi possível abrir Select2: " + selectId);
+  });
 };
 
 FacilitaNFSe.setSelect2Value = function (selectId, value, label) {
-  var $ = window.jQuery;
-  if (!$) return Promise.resolve(false);
-  var $select = $("#" + selectId);
-  if (!$select.length) return Promise.resolve(false);
+  var select = document.getElementById(selectId);
+  if (!select) return Promise.resolve(false);
 
-  if (!$select.find('option[value="' + value + '"]').length && label) {
-    var option = new Option(label, value, true, true);
-    $select.append(option);
+  if (!select.querySelector('option[value="' + value + '"]') && label) {
+    select.appendChild(new Option(label, value, true, true));
   }
 
-  $select.val(value).trigger("change");
-  return Promise.resolve(true);
+  select.value = value;
+  FacilitaNFSe.dispatchInput(select);
+  return FacilitaNFSe.callPageBridge("select2SetVal", [selectId, value, label || value]).then(function () {
+    return FacilitaNFSe.getSelectValue(selectId) === String(value);
+  });
 };
 
 FacilitaNFSe.setSelect2BySearch = function (selectId, searchText, optionValue) {
-  var $ = window.jQuery;
-  if (!$) return Promise.reject(new Error("jQuery não disponível na página"));
+  var select = document.getElementById(selectId);
+  if (!select) return Promise.reject(new Error("Select não encontrado: " + selectId));
 
-  var $select = $("#" + selectId);
-  if (!$select.length) return Promise.reject(new Error("Select não encontrado: " + selectId));
-
-  $select.select2("open");
-
-  return FacilitaNFSe.sleep(300).then(function () {
-    var searchField = document.querySelector(
-      ".select2-container--open .select2-search__field"
-    );
-    if (!searchField) {
-      throw new Error("Campo de busca Select2 não encontrado");
-    }
-
-    searchField.focus();
-    searchField.value = searchText;
-    searchField.dispatchEvent(new Event("input", { bubbles: true }));
-    searchField.dispatchEvent(new Event("keyup", { bubbles: true }));
-
-    return FacilitaNFSe.waitForSelect2Option(optionValue, 8000);
-  }).then(function (optionText) {
-    var options = document.querySelectorAll(
-      ".select2-container--open .select2-results__option"
-    );
-    for (var i = 0; i < options.length; i++) {
-      var option = options[i];
-      if (option.textContent.indexOf(optionValue) !== -1 || option.textContent === optionText) {
-        option.click();
-        return FacilitaNFSe.sleep(400);
-      }
-    }
-    throw new Error("Opção Select2 não encontrada para: " + optionValue);
-  });
+  return FacilitaNFSe.callPageBridge(
+    "select2SearchAndSelect",
+    [selectId, searchText, optionValue],
+    35000
+  );
 };
 
 FacilitaNFSe.waitForSelect2Option = function (match, timeoutMs) {
   var started = Date.now();
   return new Promise(function (resolve, reject) {
     function poll() {
-      var options = document.querySelectorAll(
-        ".select2-container--open .select2-results__option"
-      );
+      var options = document.querySelectorAll(".select2-results__option");
       for (var i = 0; i < options.length; i++) {
         var text = options[i].textContent.trim();
         if (text && text.indexOf("Buscando") === -1 && text.indexOf(match) !== -1) {
@@ -143,6 +182,37 @@ FacilitaNFSe.waitForSelect2Option = function (match, timeoutMs) {
 
 FacilitaNFSe.clickButton = function (id) {
   var button = document.getElementById(id);
+  if (!button) return false;
+  button.click();
+  return true;
+};
+
+FacilitaNFSe.findAdvanceButton = function () {
+  var byId = document.getElementById("btnAvancar");
+  if (byId) return byId;
+
+  var comandos = document.querySelector(".comandos");
+  if (comandos) {
+    var candidates = comandos.querySelectorAll('button[type="submit"], a.btn-primary.direita');
+    for (var i = 0; i < candidates.length; i++) {
+      var text = (candidates[i].textContent || "").trim();
+      if (text.indexOf("Avançar") !== -1) {
+        return candidates[i];
+      }
+    }
+  }
+
+  var form = document.querySelector("form.formdps");
+  if (form) {
+    var submit = form.querySelector('button[type="submit"].btn-primary');
+    if (submit) return submit;
+  }
+
+  return null;
+};
+
+FacilitaNFSe.clickAdvanceButton = function () {
+  var button = FacilitaNFSe.findAdvanceButton();
   if (!button) return false;
   button.click();
   return true;

@@ -5,6 +5,105 @@ FacilitaNFSe.getEmitenteMunicipio = function () {
   return hidden ? hidden.value : null;
 };
 
+FacilitaNFSe.getMunicipioPrestacaoLabel = function (code) {
+  var hidden = document.getElementById("LocalPrestacao_DescricaoMunicipioPrestacao");
+  if (hidden && hidden.value) return hidden.value;
+
+  var label = FacilitaNFSe.getSelectLabel("LocalPrestacao_CodigoMunicipioPrestacao");
+  if (label) return label;
+
+  return code;
+};
+
+FacilitaNFSe.getCodigoTributacaoSearchTerm = function (codigo, customBusca) {
+  if (customBusca) return customBusca;
+  var parts = String(codigo || "").split(".");
+  if (parts.length >= 2) {
+    return parts[0] + "." + parts[1];
+  }
+  return String(codigo || "").replace(/\./g, "").substring(0, 4);
+};
+
+FacilitaNFSe.waitForRadioEnabled = function (name, timeoutMs) {
+  var started = Date.now();
+  return new Promise(function (resolve, reject) {
+    function poll() {
+      var input = document.querySelector(
+        'input[type="radio"][name="' + name.replace(/\./g, "\\.") + '"]:not([disabled])'
+      );
+      if (input) {
+        resolve(input);
+        return;
+      }
+      if (Date.now() - started > timeoutMs) {
+        reject(new Error("Campo não habilitou: " + name));
+        return;
+      }
+      setTimeout(poll, 200);
+    }
+    poll();
+  });
+};
+
+FacilitaNFSe.waitForSelectValue = function (selectId, expectedValue, timeoutMs) {
+  var started = Date.now();
+  return new Promise(function (resolve, reject) {
+    function poll() {
+      if (FacilitaNFSe.getSelectValue(selectId) === String(expectedValue)) {
+        resolve(true);
+        return;
+      }
+      if (Date.now() - started > timeoutMs) {
+        reject(new Error("Select não atualizou: " + selectId));
+        return;
+      }
+      setTimeout(poll, 200);
+    }
+    poll();
+  });
+};
+
+FacilitaNFSe.isCodigoTributacaoSelected = function (codigo) {
+  return FacilitaNFSe.getSelectValue("ServicoPrestado_CodigoTributacaoNacional") === String(codigo);
+};
+
+FacilitaNFSe.fillCodigoTributacao = function (codigo, searchTerm, options) {
+  if (FacilitaNFSe.isCodigoTributacaoSelected(codigo)) {
+    return Promise.resolve(null);
+  }
+
+  if (
+    !FacilitaNFSe.shouldApplyField(
+      "codigoTributacao",
+      FacilitaNFSe.getSelectValue("ServicoPrestado_CodigoTributacaoNacional"),
+      codigo,
+      options
+    )
+  ) {
+    return Promise.resolve(null);
+  }
+
+  return FacilitaNFSe.setSelect2BySearch(
+    "ServicoPrestado_CodigoTributacaoNacional",
+    searchTerm,
+    codigo
+  ).catch(function (error) {
+    if (FacilitaNFSe.isCodigoTributacaoSelected(codigo)) {
+      return null;
+    }
+    throw error;
+  }).then(function () {
+    if (FacilitaNFSe.isCodigoTributacaoSelected(codigo)) {
+      return FacilitaNFSe.sleep(400);
+    }
+    return FacilitaNFSe.waitForSelectValue(
+      "ServicoPrestado_CodigoTributacaoNacional",
+      codigo,
+      8000
+    );
+  });
+};
+
 FacilitaNFSe.waitForEnabled = function (id, timeoutMs) {
   var started = Date.now();
   return new Promise(function (resolve, reject) {
@@ -21,6 +120,33 @@ FacilitaNFSe.waitForEnabled = function (id, timeoutMs) {
       setTimeout(poll, 200);
     }
     poll();
+  });
+};
+
+FacilitaNFSe.fillMunicipioPrestacao = function (municipio, config, options) {
+  var current = FacilitaNFSe.getSelectValue("LocalPrestacao_CodigoMunicipioPrestacao");
+  if (!FacilitaNFSe.shouldApplyField("municipioPrestacao", current, municipio, options)) {
+    return Promise.resolve(null);
+  }
+
+  var label =
+    (config && config.descricaoMunicipioPrestacao) ||
+    FacilitaNFSe.getMunicipioPrestacaoLabel(municipio);
+  var searchTerm = String(municipio).length >= 4 ? String(municipio).substring(0, 4) : String(municipio);
+
+  return FacilitaNFSe.setSelect2Value(
+    "LocalPrestacao_CodigoMunicipioPrestacao",
+    municipio,
+    label
+  ).then(function (applied) {
+    if (applied && FacilitaNFSe.getSelectValue("LocalPrestacao_CodigoMunicipioPrestacao") === String(municipio)) {
+      return FacilitaNFSe.sleep(300);
+    }
+    return FacilitaNFSe.setSelect2BySearch(
+      "LocalPrestacao_CodigoMunicipioPrestacao",
+      searchTerm,
+      municipio
+    );
   });
 };
 
@@ -41,55 +167,46 @@ FacilitaNFSe.fillServico = function (config, options) {
           options
         )
       ) {
-        FacilitaNFSe.setChosenSelect(
+        return FacilitaNFSe.setChosenSelect(
           "LocalPrestacao_CodigoPaisPrestacao",
           config.codigoPaisPrestacao
         );
       }
-      return FacilitaNFSe.sleep(300);
+      return null;
+    }).then(function () {
+      return FacilitaNFSe.sleep(400);
     });
   }
 
   if (municipio) {
     chain = chain.then(function () {
-      var current = FacilitaNFSe.getSelectValue("LocalPrestacao_CodigoMunicipioPrestacao");
-      if (!FacilitaNFSe.shouldApplyField("municipioPrestacao", current, municipio, options)) {
-        return null;
-      }
-      return FacilitaNFSe.setSelect2BySearch(
-        "LocalPrestacao_CodigoMunicipioPrestacao",
-        municipio,
-        municipio
-      );
+      return FacilitaNFSe.fillMunicipioPrestacao(municipio, config, options);
     });
   }
 
   if (config.codigoTributacaoNacional) {
-    var searchTerm =
-      config.codigoTributacaoBusca ||
-      config.codigoTributacaoNacional.replace(/\./g, "").substring(0, 4);
+    var searchTerm = FacilitaNFSe.getCodigoTributacaoSearchTerm(
+      config.codigoTributacaoNacional,
+      config.codigoTributacaoBusca
+    );
 
     chain = chain.then(function () {
-      var current = FacilitaNFSe.getSelectValue("ServicoPrestado_CodigoTributacaoNacional");
-      if (
-        !FacilitaNFSe.shouldApplyField(
-          "codigoTributacao",
-          current,
-          config.codigoTributacaoNacional,
-          options
-        )
-      ) {
-        return null;
-      }
-      return FacilitaNFSe.setSelect2BySearch(
-        "ServicoPrestado_CodigoTributacaoNacional",
+      return FacilitaNFSe.waitForEnabled("ServicoPrestado_CodigoTributacaoNacional", 10000);
+    });
+
+    chain = chain.then(function () {
+      return FacilitaNFSe.fillCodigoTributacao(
+        config.codigoTributacaoNacional,
         searchTerm,
-        config.codigoTributacaoNacional
+        options
       );
     });
 
     chain = chain.then(function () {
-      return FacilitaNFSe.waitForEnabled("ServicoPrestado_Descricao", 8000);
+      return FacilitaNFSe.waitForRadioEnabled(
+        "ServicoPrestado.HaExportacaoImunidadeNaoIncidencia",
+        15000
+      );
     });
   }
 
@@ -108,11 +225,15 @@ FacilitaNFSe.fillServico = function (config, options) {
           config.haExportacaoImunidadeNaoIncidencia
         );
       }
-      return FacilitaNFSe.sleep(200);
+      return FacilitaNFSe.sleep(300);
     });
   }
 
   if (config.descricao) {
+    chain = chain.then(function () {
+      return FacilitaNFSe.waitForEnabled("ServicoPrestado_Descricao", 15000);
+    });
+
     chain = chain.then(function () {
       if (
         FacilitaNFSe.shouldApplyField(

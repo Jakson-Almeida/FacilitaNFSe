@@ -64,7 +64,7 @@ FacilitaNFSe.DEFAULT_TEMPLATES = [
     servico: {
       codigoPaisPrestacao: "BR",
       codigoTributacaoNacional: "17.06.01",
-      codigoTributacaoBusca: "1706",
+      codigoTributacaoBusca: "17.06",
       haExportacaoImunidadeNaoIncidencia: "0",
       descricao:
         "Prestação de serviço de intermediação de negócios (Programa de afiliados Shopee) referente às comissões faturadas no último mês.",

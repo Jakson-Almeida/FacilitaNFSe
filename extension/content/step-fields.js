@@ -52,6 +52,22 @@ FacilitaNFSe.getSelectLabel = function (id) {
   return select.options[select.selectedIndex].text || "";
 };
 
+FacilitaNFSe.isSystemDefaultFieldValue = function (fieldKey, currentValue) {
+  var current = FacilitaNFSe.normalizeFieldValue(currentValue);
+  if (!current) return true;
+
+  var defaultsByField = {
+    tomadorLocal: [FacilitaNFSe.LOCAL_DOMICILIO.NAO_INFORMADO],
+    intermediarioLocal: [FacilitaNFSe.LOCAL_DOMICILIO.NAO_INFORMADO],
+    imunidadeExportacao: ["0"],
+    tipoValorTributos: ["1"],
+  };
+
+  var defaults = defaultsByField[fieldKey];
+  if (!defaults) return false;
+  return defaults.indexOf(current) >= 0;
+};
+
 FacilitaNFSe.shouldApplyField = function (fieldKey, currentValue, proposedValue, options) {
   options = options || {};
   if (proposedValue == null || proposedValue === "") return false;
@@ -59,7 +75,7 @@ FacilitaNFSe.shouldApplyField = function (fieldKey, currentValue, proposedValue,
   var current = FacilitaNFSe.normalizeFieldValue(currentValue);
   var proposed = FacilitaNFSe.normalizeFieldValue(proposedValue);
 
-  if (!current) return true;
+  if (!current || FacilitaNFSe.isSystemDefaultFieldValue(fieldKey, currentValue)) return true;
   if (current === proposed) return false;
 
   if (options.overwriteAll) return true;
@@ -69,13 +85,13 @@ FacilitaNFSe.shouldApplyField = function (fieldKey, currentValue, proposedValue,
   return false;
 };
 
-FacilitaNFSe.classifyField = function (currentValue, proposedValue) {
+FacilitaNFSe.classifyField = function (currentValue, proposedValue, fieldKey) {
   if (proposedValue == null || proposedValue === "") {
     return "skip";
   }
   var current = FacilitaNFSe.normalizeFieldValue(currentValue);
   var proposed = FacilitaNFSe.normalizeFieldValue(proposedValue);
-  if (!current) return "empty";
+  if (!current || FacilitaNFSe.isSystemDefaultFieldValue(fieldKey, currentValue)) return "empty";
   if (current === proposed) return "match";
   return "conflict";
 };
@@ -356,7 +372,7 @@ FacilitaNFSe.scanStep = function (step, template, runtime) {
       proposed: proposed,
       currentDisplay: display(current),
       proposedDisplay: display(proposed),
-      status: FacilitaNFSe.classifyField(current, proposed),
+      status: FacilitaNFSe.classifyField(current, proposed, definition.key),
     };
   });
 

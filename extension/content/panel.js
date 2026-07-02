@@ -367,13 +367,11 @@ FacilitaNFSe.Panel = {
   },
 
   onAdvanceClick: function () {
-    var button = document.getElementById("btnAvancar");
-    if (!button) {
+    if (!FacilitaNFSe.clickAdvanceButton()) {
       this.setStatus("Botão Avançar não encontrado nesta página.", "error");
       return;
     }
     this.setStatus("Avançando para o próximo passo...", "info");
-    button.click();
   },
 
   onFinishClick: function () {
