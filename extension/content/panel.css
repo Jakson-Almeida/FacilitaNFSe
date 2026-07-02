@@ -25,16 +25,40 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 12px 14px;
+  padding: 10px 12px;
   background: linear-gradient(135deg, #1d4ed8, #2563eb);
   color: #fff;
 }
 
-#facilita-nfse-panel .fn-header strong {
-  font-size: 14px;
+#facilita-nfse-panel .fn-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
 
-#facilita-nfse-panel .fn-header button {
+#facilita-nfse-panel .fn-logo {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+#facilita-nfse-panel .fn-header strong {
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#facilita-nfse-panel .fn-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+#facilita-nfse-panel .fn-header-btn {
   border: none;
   background: rgba(255, 255, 255, 0.18);
   color: #fff;
@@ -42,6 +66,16 @@
   height: 28px;
   border-radius: 8px;
   cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+#facilita-nfse-panel .fn-header-btn:hover {
+  background: rgba(255, 255, 255, 0.28);
 }
 
 #facilita-nfse-panel .fn-body {
@@ -71,6 +105,73 @@
   border-radius: 8px;
   background: #fff;
   font: inherit;
+}
+
+#facilita-nfse-panel .fn-template-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+#facilita-nfse-panel .fn-template-row select {
+  flex: 1;
+  min-width: 0;
+}
+
+#facilita-nfse-panel .fn-template-menu-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+#facilita-nfse-panel .fn-icon-btn {
+  width: 38px;
+  height: 38px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #475569;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+#facilita-nfse-panel .fn-icon-btn:hover,
+#facilita-nfse-panel .fn-icon-btn.fn-active {
+  border-color: #93c5fd;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+#facilita-nfse-panel .fn-template-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 160px;
+  background: #fff;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+  padding: 6px;
+  z-index: 2;
+}
+
+#facilita-nfse-panel .fn-menu-item {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: #0f172a;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+#facilita-nfse-panel .fn-menu-item:hover {
+  background: #f1f5f9;
 }
 
 #facilita-nfse-panel .fn-hidden {
@@ -127,6 +228,37 @@
 #facilita-nfse-panel .fn-btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+#facilita-nfse-panel .fn-confirm {
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+#facilita-nfse-panel .fn-confirm h3 {
+  margin: 0 0 8px;
+  font-size: 13px;
+}
+
+#facilita-nfse-panel .fn-emit-success {
+  border: 1px solid #86efac;
+  background: #f0fdf4;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+#facilita-nfse-panel .fn-emit-success p {
+  margin: 0;
+}
+
+#facilita-nfse-panel .fn-emit-success p + p {
+  margin-top: 6px;
+}
+
+#facilita-nfse-panel .fn-emit-success strong {
+  color: #15803d;
 }
 
 #facilita-nfse-panel .fn-conflicts {

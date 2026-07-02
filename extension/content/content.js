@@ -5,9 +5,9 @@ FacilitaNFSe.applyTemplateOnPage = function (template, runtime, options) {
   if (!step) {
     return Promise.reject(new Error("Esta página não faz parte do fluxo DPS."));
   }
-  if (step === "emitir") {
+  if (step === "emitir" || step === "nfse") {
     return Promise.reject(
-      new Error("O passo Emitir NFS-e é só revisão. Use Concluir após revisar.")
+      new Error("O passo de emissão não usa template. Use Emitir NFS-e no painel.")
     );
   }
 
@@ -101,7 +101,8 @@ chrome.runtime.onMessage.addListener(function (message, _sender, sendResponse) {
       FacilitaNFSe.initPanel();
     } else {
       FacilitaNFSe.Panel.root.classList.remove("fn-collapsed");
-      document.getElementById("fn-toggle").textContent = "−";
+      var toggle = document.getElementById("fn-toggle");
+      if (toggle) toggle.textContent = "−";
     }
     sendResponse({ ok: true });
     return false;

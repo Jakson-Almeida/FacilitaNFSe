@@ -7,6 +7,7 @@ var STEP_LABELS = {
   servico: "Passo 2 — Serviço",
   tributacao: "Passo 3 — Valores",
   emitir: "Passo 4 — Revisão",
+  nfse: "Emissão da NFS-e",
 };
 
 function setStatus(message, type) {

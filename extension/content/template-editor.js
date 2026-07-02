@@ -26,8 +26,10 @@ FacilitaNFSe.TemplateEditor = {
 
   show: function () {
     document.getElementById("fn-main-controls").classList.add("fn-hidden");
-    document.getElementById("fn-template-actions").classList.add("fn-hidden");
+    FacilitaNFSe.Panel.hideTemplateMenu();
     document.getElementById("fn-conflicts").classList.add("fn-hidden");
+    document.getElementById("fn-emit-confirm").classList.add("fn-hidden");
+    document.getElementById("fn-emit-success").classList.add("fn-hidden");
     document.getElementById("fn-advance").classList.add("fn-hidden");
     document.getElementById("fn-finish").classList.add("fn-hidden");
     document.getElementById("fn-editor").classList.remove("fn-hidden");
@@ -48,7 +50,7 @@ FacilitaNFSe.TemplateEditor = {
   close: function () {
     document.getElementById("fn-editor").classList.add("fn-hidden");
     document.getElementById("fn-main-controls").classList.remove("fn-hidden");
-    document.getElementById("fn-template-actions").classList.remove("fn-hidden");
+    FacilitaNFSe.Panel.hideTemplateMenu();
     this.root.classList.remove("fn-editor-open");
     FacilitaNFSe.Panel.refresh();
   },

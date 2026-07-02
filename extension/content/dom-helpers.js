@@ -218,6 +218,78 @@ FacilitaNFSe.clickAdvanceButton = function () {
   return true;
 };
 
+FacilitaNFSe.findEmitNfseButton = function () {
+  var byId = document.getElementById("btnProsseguir");
+  if (byId) return byId;
+
+  var comandos = document.querySelector(".comandos");
+  if (comandos) {
+    var candidates = comandos.querySelectorAll("a.btn-primary.direita, button.btn-primary.direita");
+    for (var i = 0; i < candidates.length; i++) {
+      var text = (candidates[i].textContent || "").trim();
+      if (text.indexOf("Emitir NFS-e") !== -1 || text.indexOf("Emitir NFSe") !== -1) {
+        return candidates[i];
+      }
+    }
+  }
+
+  return null;
+};
+
+FacilitaNFSe.clickEmitNfseButton = function () {
+  var button = FacilitaNFSe.findEmitNfseButton();
+  if (!button) return false;
+  button.click();
+  return true;
+};
+
+FacilitaNFSe.detectNfseSuccess = function () {
+  var selectors = [
+    ".alert-success",
+    ".alert.alert-success",
+    ".alert-info.alert",
+    ".alert",
+  ];
+
+  for (var s = 0; s < selectors.length; s++) {
+    var elements = document.querySelectorAll(selectors[s]);
+    for (var i = 0; i < elements.length; i++) {
+      var text = (elements[i].textContent || "").trim();
+      if (/NFS-e foi gerada com sucesso/i.test(text)) {
+        return true;
+      }
+    }
+  }
+
+  var bodyText = document.body ? document.body.innerText : "";
+  return /NFS-e foi gerada com sucesso/i.test(bodyText);
+};
+
+FacilitaNFSe.waitForNfseSuccess = function (timeoutMs, onTick) {
+  var started = Date.now();
+  return new Promise(function (resolve, reject) {
+    function poll() {
+      if (FacilitaNFSe.detectNfseSuccess()) {
+        resolve(true);
+        return;
+      }
+
+      if (typeof onTick === "function") {
+        onTick();
+      }
+
+      if (Date.now() - started > timeoutMs) {
+        reject(new Error("Timeout aguardando confirmação de emissão da NFS-e."));
+        return;
+      }
+
+      setTimeout(poll, 500);
+    }
+
+    poll();
+  });
+};
+
 FacilitaNFSe.getVisibleModal = function () {
   var candidates = document.querySelectorAll(
     ".bootbox.modal, .modal.in, .modal.show, .modal[style*='display: block']"

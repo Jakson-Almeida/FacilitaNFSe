@@ -6,6 +6,8 @@ FacilitaNFSe.Panel = {
   currentStep: null,
   pendingApply: null,
   selectedTemplateId: null,
+  emissionPending: false,
+  emissionAutoClicked: false,
 
   init: function () {
     if (document.getElementById("facilita-nfse-panel")) return;
@@ -14,18 +16,33 @@ FacilitaNFSe.Panel = {
     panel.id = "facilita-nfse-panel";
     panel.innerHTML =
       '<div class="fn-header">' +
+      '<div class="fn-header-brand">' +
+      '<img id="fn-logo" class="fn-logo" alt="" />' +
       "<strong>FacilitaNFSe</strong>" +
-      '<button type="button" id="fn-toggle" title="Recolher">−</button>' +
+      "</div>" +
+      '<div class="fn-header-actions">' +
+      '<button type="button" id="fn-toggle" class="fn-header-btn" title="Recolher" aria-label="Recolher">−</button>' +
+      '<button type="button" id="fn-close" class="fn-header-btn" title="Fechar" aria-label="Fechar">×</button>' +
+      "</div>" +
       "</div>" +
       '<div class="fn-body">' +
       '<p class="fn-step" id="fn-step-label">Detectando passo...</p>' +
       '<div id="fn-main-controls">' +
       "<label for=\"fn-template\">Template</label>" +
+      '<div class="fn-template-row">' +
       '<select id="fn-template"></select>' +
-      '<div id="fn-template-actions" class="fn-actions-row">' +
-      '<button type="button" class="fn-btn fn-btn-secondary" id="fn-new-template">Novo</button>' +
-      '<button type="button" class="fn-btn fn-btn-secondary" id="fn-edit-template">Editar</button>' +
-      '<button type="button" class="fn-btn fn-btn-secondary" id="fn-duplicate-template">Duplicar</button>' +
+      '<div class="fn-template-menu-wrap">' +
+      '<button type="button" id="fn-template-settings" class="fn-icon-btn" title="Opções do template" aria-label="Opções do template" aria-expanded="false" aria-haspopup="true">' +
+      '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">' +
+      '<path fill="currentColor" d="M19.14 12.936a7.07 7.07 0 0 0 .053-.936 7.07 7.07 0 0 0-.053-.936l2.029-1.587a.5.5 0 0 0 .121-.637l-1.92-3.324a.5.5 0 0 0-.606-.22l-2.39.962a7.12 7.12 0 0 0-1.62-.936l-.361-2.538a.5.5 0 0 0-.497-.425h-3.84a.5.5 0 0 0-.497.425l-.361 2.538a7.12 7.12 0 0 0-1.62.936l-2.39-.962a.5.5 0 0 0-.606.22L2.657 8.44a.5.5 0 0 0 .121.637l2.029 1.587a7.07 7.07 0 0 0-.053.936 7.07 7.07 0 0 0 .053.936l-2.029 1.587a.5.5 0 0 0-.121.637l1.92 3.324a.5.5 0 0 0 .606.22l2.39-.962c.502.386 1.04.708 1.62.936l.361 2.538a.5.5 0 0 0 .497.425h3.84a.5.5 0 0 0 .497-.425l.361-2.538c.58-.228 1.118-.55 1.62-.936l2.39.962a.5.5 0 0 0 .606-.22l1.92-3.324a.5.5 0 0 0-.121-.637l-2.029-1.587ZM12 15.2A3.2 3.2 0 1 1 12 8.8a3.2 3.2 0 0 1 0 6.4Z"/>' +
+      "</svg>" +
+      "</button>" +
+      '<div id="fn-template-actions" class="fn-template-menu fn-hidden" role="menu">' +
+      '<button type="button" class="fn-menu-item" id="fn-new-template" role="menuitem">Novo template</button>' +
+      '<button type="button" class="fn-menu-item" id="fn-edit-template" role="menuitem">Editar</button>' +
+      '<button type="button" class="fn-menu-item" id="fn-duplicate-template" role="menuitem">Duplicar</button>' +
+      "</div>" +
+      "</div>" +
       "</div>" +
       '<div id="fn-valor-group" class="fn-hidden">' +
       "<label for=\"fn-valor\">Valor do serviço (R$)</label>" +
@@ -55,20 +72,41 @@ FacilitaNFSe.Panel = {
       "</div>" +
       "</div>" +
       '<p class="fn-status" id="fn-status" aria-live="polite"></p>' +
+      '<div id="fn-emit-confirm" class="fn-confirm fn-hidden">' +
+      "<h3>Confirmar emissão</h3>" +
+      '<p class="fn-summary">Tem certeza que deseja emitir a NFS-e? Revise os dados antes de confirmar.</p>' +
+      '<div class="fn-actions-row">' +
+      '<button type="button" class="fn-btn fn-btn-secondary" id="fn-cancel-emit">Cancelar</button>' +
+      '<button type="button" class="fn-btn fn-btn-primary" id="fn-confirm-emit">Sim, emitir NFS-e</button>' +
+      "</div>" +
+      "</div>" +
+      '<div id="fn-emit-success" class="fn-emit-success fn-hidden">' +
+      "<p><strong>NFS-e emitida com sucesso!</strong></p>" +
+      '<p class="fn-summary">A emissão foi concluída. Confira os dados na página do portal.</p>' +
+      "</div>" +
       '<button type="button" class="fn-btn fn-btn-success fn-hidden" id="fn-advance">Avançar</button>' +
-      '<button type="button" class="fn-btn fn-btn-success fn-hidden" id="fn-finish">Concluir</button>' +
+      '<button type="button" class="fn-btn fn-btn-success fn-hidden" id="fn-finish">Emitir NFS-e</button>' +
       "</div>";
 
     document.body.appendChild(panel);
     this.root = panel;
 
+    document.getElementById("fn-logo").src = chrome.runtime.getURL("icons/icon16.png");
     document.getElementById("fn-toggle").addEventListener("click", this.toggleCollapsed.bind(this));
+    document.getElementById("fn-close").addEventListener("click", this.closePanel.bind(this));
+    document.getElementById("fn-template-settings").addEventListener("click", this.toggleTemplateMenu.bind(this));
+    if (!this.boundDocumentClick) {
+      this.boundDocumentClick = this.onDocumentClick.bind(this);
+      document.addEventListener("click", this.boundDocumentClick);
+    }
     document.getElementById("fn-apply").addEventListener("click", this.onApplyClick.bind(this));
     document.getElementById("fn-cancel-conflicts").addEventListener("click", this.hideConflicts.bind(this));
     document.getElementById("fn-confirm-conflicts").addEventListener("click", this.onConfirmConflicts.bind(this));
     document.getElementById("fn-overwrite-all").addEventListener("change", this.onOverwriteAllChange.bind(this));
     document.getElementById("fn-advance").addEventListener("click", this.onAdvanceClick.bind(this));
     document.getElementById("fn-finish").addEventListener("click", this.onFinishClick.bind(this));
+    document.getElementById("fn-cancel-emit").addEventListener("click", this.hideEmitConfirm.bind(this));
+    document.getElementById("fn-confirm-emit").addEventListener("click", this.onConfirmEmit.bind(this));
     document.getElementById("fn-template").addEventListener("change", this.onTemplateChange.bind(this));
     document.getElementById("fn-new-template").addEventListener("click", this.onNewTemplate.bind(this));
     document.getElementById("fn-edit-template").addEventListener("click", this.onEditTemplate.bind(this));
@@ -88,6 +126,9 @@ FacilitaNFSe.Panel = {
         FacilitaNFSe.Panel.templates = templates;
         FacilitaNFSe.Panel.renderTemplates();
         FacilitaNFSe.Panel.refresh();
+        if (sessionStorage.getItem("facilita-nfse-emission-pending") === "1") {
+          FacilitaNFSe.Panel.resumeEmissionWatch();
+        }
       }
     );
   },
@@ -96,6 +137,42 @@ FacilitaNFSe.Panel = {
     this.root.classList.toggle("fn-collapsed");
     var toggle = document.getElementById("fn-toggle");
     toggle.textContent = this.root.classList.contains("fn-collapsed") ? "+" : "−";
+  },
+
+  closePanel: function () {
+    this.hideTemplateMenu();
+    if (this.root) {
+      this.root.remove();
+      this.root = null;
+    }
+  },
+
+  toggleTemplateMenu: function (event) {
+    if (event) {
+      event.stopPropagation();
+    }
+    var menu = document.getElementById("fn-template-actions");
+    var button = document.getElementById("fn-template-settings");
+    var willOpen = menu.classList.contains("fn-hidden");
+    menu.classList.toggle("fn-hidden", !willOpen);
+    button.classList.toggle("fn-active", willOpen);
+    button.setAttribute("aria-expanded", willOpen ? "true" : "false");
+  },
+
+  hideTemplateMenu: function () {
+    var menu = document.getElementById("fn-template-actions");
+    var button = document.getElementById("fn-template-settings");
+    if (!menu || !button) return;
+    menu.classList.add("fn-hidden");
+    button.classList.remove("fn-active");
+    button.setAttribute("aria-expanded", "false");
+  },
+
+  onDocumentClick: function (event) {
+    if (!this.root) return;
+    if (!event.target.closest("#facilita-nfse-panel .fn-template-menu-wrap")) {
+      this.hideTemplateMenu();
+    }
   },
 
   setStatus: function (message, type) {
@@ -157,6 +234,7 @@ FacilitaNFSe.Panel = {
   },
 
   onDuplicateTemplate: function () {
+    this.hideTemplateMenu();
     var template = this.getSelectedTemplate();
     if (!template) {
       this.setStatus("Selecione um template para duplicar.", "error");
@@ -166,10 +244,12 @@ FacilitaNFSe.Panel = {
   },
 
   onNewTemplate: function () {
+    this.hideTemplateMenu();
     FacilitaNFSe.TemplateEditor.openNew();
   },
 
   onEditTemplate: function () {
+    this.hideTemplateMenu();
     var template = this.getSelectedTemplate();
     if (!template) {
       this.setStatus("Selecione um template para editar.", "error");
@@ -179,6 +259,7 @@ FacilitaNFSe.Panel = {
   },
 
   onTemplateChange: function () {
+    this.hideTemplateMenu();
     this.selectedTemplateId = document.getElementById("fn-template").value;
     this.updateValorVisibility();
     this.hideConflicts();
@@ -190,6 +271,31 @@ FacilitaNFSe.Panel = {
     }
 
     this.currentStep = FacilitaNFSe.detectStep(window.location.pathname);
+
+    if (
+      sessionStorage.getItem("facilita-nfse-emission-pending") === "1" &&
+      !this.emissionPending &&
+      !FacilitaNFSe.detectNfseSuccess()
+    ) {
+      this.resumeEmissionWatch();
+      return;
+    }
+
+    if (this.currentStep === "pessoas") {
+      sessionStorage.removeItem("facilita-nfse-emission-done");
+      sessionStorage.removeItem("facilita-nfse-emission-pending");
+      this.emissionPending = false;
+      this.emissionAutoClicked = false;
+    }
+
+    if (
+      sessionStorage.getItem("facilita-nfse-emission-done") === "1" ||
+      FacilitaNFSe.detectNfseSuccess()
+    ) {
+      this.showEmissionSuccess();
+      return;
+    }
+
     var stepLabel = document.getElementById("fn-step-label");
     var applyBtn = document.getElementById("fn-apply");
     var mainControls = document.getElementById("fn-main-controls");
@@ -199,16 +305,29 @@ FacilitaNFSe.Panel = {
     stepLabel.textContent =
       FacilitaNFSe.STEP_LABELS[this.currentStep] || "Fora do fluxo DPS";
 
-    var onEditableStep = this.currentStep && this.currentStep !== "emitir";
+    var onEditableStep =
+      this.currentStep &&
+      this.currentStep !== "emitir" &&
+      this.currentStep !== "nfse";
     mainControls.classList.toggle("fn-hidden", !onEditableStep);
     applyBtn.disabled = !onEditableStep;
 
     this.updateValorVisibility();
     this.updateNavigationButtons();
     this.hideConflicts();
+    this.hideEmitConfirm();
+
+    if (this.emissionPending) {
+      this.setStatus("Emitindo NFS-e...", "info");
+      finishBtn.classList.add("fn-hidden");
+      finishBtn.disabled = true;
+      return;
+    }
 
     if (this.currentStep === "emitir") {
-      this.setStatus("Revise os dados e emita a NFS-e manualmente no portal.", "info");
+      this.setStatus("Revise os dados e confirme a emissão da NFS-e.", "info");
+    } else if (this.currentStep === "nfse") {
+      this.setStatus("Processando emissão da NFS-e...", "info");
     } else if (FacilitaNFSe.isStepReadyToAdvance(this.currentStep)) {
       this.setStatus("Passo com campos preenchidos. Você pode avançar.", "ok");
     } else {
@@ -216,11 +335,11 @@ FacilitaNFSe.Panel = {
     }
 
     advanceBtn.classList.toggle("fn-hidden", !this.shouldShowAdvance());
-    finishBtn.classList.toggle("fn-hidden", this.currentStep !== "emitir");
+    finishBtn.classList.toggle("fn-hidden", !this.shouldShowFinish());
+    finishBtn.disabled = false;
 
     if (this.currentStep === "emitir") {
-      finishBtn.disabled = false;
-      finishBtn.textContent = "Concluir";
+      finishBtn.textContent = "Emitir NFS-e";
     } else if (this.currentStep === "tributacao") {
       advanceBtn.textContent = "Avançar para revisão";
     } else {
@@ -228,17 +347,50 @@ FacilitaNFSe.Panel = {
     }
   },
 
+  shouldShowFinish: function () {
+    return this.currentStep === "emitir" && !this.emissionPending;
+  },
+
   shouldShowAdvance: function () {
     return (
       this.currentStep &&
       this.currentStep !== "emitir" &&
+      this.currentStep !== "nfse" &&
       FacilitaNFSe.isStepReadyToAdvance(this.currentStep)
     );
   },
 
   updateNavigationButtons: function () {
     document.getElementById("fn-advance").classList.toggle("fn-hidden", !this.shouldShowAdvance());
-    document.getElementById("fn-finish").classList.toggle("fn-hidden", this.currentStep !== "emitir");
+    document.getElementById("fn-finish").classList.toggle("fn-hidden", !this.shouldShowFinish());
+  },
+
+  hideEmitConfirm: function () {
+    document.getElementById("fn-emit-confirm").classList.add("fn-hidden");
+    if (this.shouldShowFinish()) {
+      document.getElementById("fn-finish").classList.remove("fn-hidden");
+    }
+  },
+
+  showEmitConfirm: function () {
+    document.getElementById("fn-finish").classList.add("fn-hidden");
+    document.getElementById("fn-emit-confirm").classList.remove("fn-hidden");
+    this.setStatus("Confirme se deseja emitir a NFS-e.", "info");
+  },
+
+  showEmissionSuccess: function () {
+    this.emissionPending = false;
+    this.emissionAutoClicked = false;
+    sessionStorage.removeItem("facilita-nfse-emission-pending");
+    sessionStorage.setItem("facilita-nfse-emission-done", "1");
+
+    document.getElementById("fn-main-controls").classList.add("fn-hidden");
+    document.getElementById("fn-advance").classList.add("fn-hidden");
+    document.getElementById("fn-finish").classList.add("fn-hidden");
+    document.getElementById("fn-emit-confirm").classList.add("fn-hidden");
+    document.getElementById("fn-emit-success").classList.remove("fn-hidden");
+    document.getElementById("fn-step-label").textContent = "NFS-e emitida";
+    this.setStatus("NFS-e emitida com sucesso!", "ok");
   },
 
   hideConflicts: function () {
@@ -375,11 +527,59 @@ FacilitaNFSe.Panel = {
   },
 
   onFinishClick: function () {
-    this.setStatus(
-      "Fluxo assistido concluído. Revise os dados e emita a NFS-e no portal.",
-      "ok"
-    );
-    document.getElementById("fn-finish").disabled = true;
+    if (this.currentStep !== "emitir") return;
+    this.showEmitConfirm();
+  },
+
+  onConfirmEmit: function () {
+    var self = this;
+    document.getElementById("fn-confirm-emit").disabled = true;
+
+    if (!FacilitaNFSe.clickEmitNfseButton()) {
+      document.getElementById("fn-confirm-emit").disabled = false;
+      this.hideEmitConfirm();
+      this.setStatus("Botão Emitir NFS-e não encontrado nesta página.", "error");
+      return;
+    }
+
+    this.emissionPending = true;
+    this.emissionAutoClicked = false;
+    sessionStorage.setItem("facilita-nfse-emission-pending", "1");
+    document.getElementById("fn-emit-confirm").classList.add("fn-hidden");
+    this.setStatus("Emitindo NFS-e...", "info");
+    document.getElementById("fn-finish").classList.add("fn-hidden");
+
+    this.startEmissionWatch().finally(function () {
+      document.getElementById("fn-confirm-emit").disabled = false;
+    });
+  },
+
+  startEmissionWatch: function () {
+    var self = this;
+    return FacilitaNFSe.waitForNfseSuccess(90000, function () {
+      if (self.emissionAutoClicked) return;
+      if (FacilitaNFSe.detectStep(window.location.pathname) !== "nfse") return;
+      if (FacilitaNFSe.clickEmitNfseButton()) {
+        self.emissionAutoClicked = true;
+      }
+    })
+      .then(function () {
+        self.showEmissionSuccess();
+      })
+      .catch(function (error) {
+        self.emissionPending = false;
+        sessionStorage.removeItem("facilita-nfse-emission-pending");
+        self.refresh();
+        self.setStatus(error.message || String(error), "error");
+      });
+  },
+
+  resumeEmissionWatch: function () {
+    this.emissionPending = true;
+    document.getElementById("fn-finish").classList.add("fn-hidden");
+    document.getElementById("fn-emit-confirm").classList.add("fn-hidden");
+    this.setStatus("Emitindo NFS-e...", "info");
+    this.startEmissionWatch();
   },
 };
 
