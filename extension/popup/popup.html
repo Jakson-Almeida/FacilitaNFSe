@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FacilitaNFSe</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <h1>FacilitaNFSe</h1>
+      <p id="step-label" class="muted">Detectando passo...</p>
+    </header>
+
+    <main>
+      <label for="template-select">Template</label>
+      <select id="template-select"></select>
+
+      <div id="valor-group" class="field hidden">
+        <label for="valor-servico">Valor do serviço (R$)</label>
+        <input
+          id="valor-servico"
+          type="text"
+          inputmode="decimal"
+          placeholder="150,00"
+          autocomplete="off"
+        />
+      </div>
+
+      <button id="apply-btn" type="button">Aplicar neste passo</button>
+      <p id="status" class="status" aria-live="polite"></p>
+    </main>
+
+    <script src="../shared/constants.js"></script>
+    <script src="../shared/steps.js"></script>
+    <script src="../shared/storage.js"></script>
+    <script src="../templates/defaults.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

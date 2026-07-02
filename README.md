@@ -34,15 +34,34 @@ Os templates ficam salvos localmente no navegador do usuário.
 
 ## Status do projeto
 
-Este repositório está em fase inicial. A extensão ainda não foi implementada; este README documenta a ideia e o escopo do projeto.
+Versão inicial (`0.1.0`) com preenchimento automático nos **passos 1–3** do fluxo DPS (Pessoas, Serviço, Valores). O passo 4 (Emitir NFS-e) é apenas revisão.
 
-## Instalação
+### Templates incluídos
 
-> Disponível após a primeira versão publicada.
+| Template | Uso |
+|----------|-----|
+| **Shopee — Programa de Afiliados** | Tomador Shopee (CNPJ `35.635.824/0001-12`), código `17.06.01`, competência do mês anterior, valor informado na hora |
+
+### Estrutura de um template
+
+Cada template define campos por passo:
+
+- **pessoas** — competência, tomador (CNPJ + busca automática), intermediário
+- **servico** — município de prestação (padrão: município do emitente), código de tributação, descrição
+- **tributacao** — valor do serviço (`valorServicoPrompt: true` pede no popup), tipo de tributos estimados
+
+Arquivo de referência: `extension/templates/defaults.js`
+
+## Instalação (modo desenvolvedor)
 
 1. Clone o repositório
-2. Carregue a extensão no Chrome em `chrome://extensions` (modo desenvolvedor → "Carregar sem compactação")
-3. Acesse o [Emissor Nacional NFS-e](https://www.nfse.gov.br/EmissorNacional/) e configure seus templates
+2. Abra `chrome://extensions` no Chrome
+3. Ative **Modo do desenvolvedor**
+4. Clique em **Carregar sem compactação** e selecione a pasta `extension/`
+5. Acesse o [Emissor Nacional NFS-e](https://www.nfse.gov.br/EmissorNacional/) e inicie uma **Emissão Completa**
+6. Em cada passo (1–3), clique no ícone da extensão, escolha o template e **Aplicar neste passo**
+
+> **Importante:** recarregue a página do emissor após instalar ou atualizar a extensão, para o content script ser injetado.
 
 ## Como contribuir
 
