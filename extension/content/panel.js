@@ -8,6 +8,10 @@ FacilitaNFSe.Panel = {
   selectedTemplateId: null,
   emissionPending: false,
   emissionAutoClicked: false,
+  dragState: null,
+  boundDragStart: null,
+  boundDragMove: null,
+  boundDragEnd: null,
 
   init: function () {
     if (document.getElementById("facilita-nfse-panel")) return;
@@ -121,6 +125,9 @@ FacilitaNFSe.Panel = {
       FacilitaNFSe.TemplateEditor.remove();
     });
 
+    this.restorePanelPosition();
+    this.setupPanelDrag();
+
     FacilitaNFSe.loadTemplates().then(
       function (templates) {
         FacilitaNFSe.Panel.templates = templates;
@@ -140,11 +147,123 @@ FacilitaNFSe.Panel = {
   },
 
   closePanel: function () {
+    this.stopPanelDrag();
     this.hideTemplateMenu();
     if (this.root) {
       this.root.remove();
       this.root = null;
     }
+  },
+
+  restorePanelPosition: function () {
+    if (!this.root) return;
+
+    var raw = sessionStorage.getItem("facilita-nfse-panel-position");
+    if (!raw) return;
+
+    try {
+      var position = JSON.parse(raw);
+      if (typeof position.left !== "number" || typeof position.top !== "number") return;
+      this.applyPanelPosition(position.left, position.top);
+    } catch (error) {
+      return;
+    }
+  },
+
+  applyPanelPosition: function (left, top) {
+    if (!this.root) return;
+
+    var maxLeft = Math.max(0, window.innerWidth - this.root.offsetWidth);
+    var maxTop = Math.max(0, window.innerHeight - this.root.offsetHeight);
+    var clampedLeft = Math.max(0, Math.min(left, maxLeft));
+    var clampedTop = Math.max(0, Math.min(top, maxTop));
+
+    this.root.style.right = "auto";
+    this.root.style.left = clampedLeft + "px";
+    this.root.style.top = clampedTop + "px";
+  },
+
+  savePanelPosition: function () {
+    if (!this.root) return;
+
+    var rect = this.root.getBoundingClientRect();
+    sessionStorage.setItem(
+      "facilita-nfse-panel-position",
+      JSON.stringify({
+        left: rect.left,
+        top: rect.top,
+      })
+    );
+  },
+
+  setupPanelDrag: function () {
+    if (!this.root) return;
+
+    var header = this.root.querySelector(".fn-header");
+    if (!header || header.dataset.fnDragReady === "1") return;
+
+    if (!this.boundDragStart) {
+      this.boundDragStart = this.onDragStart.bind(this);
+      this.boundDragMove = this.onDragMove.bind(this);
+      this.boundDragEnd = this.onDragEnd.bind(this);
+    }
+
+    header.dataset.fnDragReady = "1";
+    header.addEventListener("pointerdown", this.boundDragStart);
+  },
+
+  stopPanelDrag: function () {
+    if (this.boundDragMove) {
+      document.removeEventListener("pointermove", this.boundDragMove);
+    }
+    if (this.boundDragEnd) {
+      document.removeEventListener("pointerup", this.boundDragEnd);
+      document.removeEventListener("pointercancel", this.boundDragEnd);
+    }
+    this.dragState = null;
+  },
+
+  onDragStart: function (event) {
+    if (!this.root || event.button !== 0) return;
+    if (event.target.closest(".fn-header-actions") || event.target.closest("button")) return;
+
+    event.preventDefault();
+
+    var rect = this.root.getBoundingClientRect();
+    this.dragState = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      origLeft: rect.left,
+      origTop: rect.top,
+    };
+
+    this.applyPanelPosition(rect.left, rect.top);
+
+    if (event.currentTarget.setPointerCapture) {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+
+    document.addEventListener("pointermove", this.boundDragMove);
+    document.addEventListener("pointerup", this.boundDragEnd);
+    document.addEventListener("pointercancel", this.boundDragEnd);
+  },
+
+  onDragMove: function (event) {
+    if (!this.dragState || !this.root) return;
+    if (event.pointerId !== this.dragState.pointerId) return;
+
+    var deltaX = event.clientX - this.dragState.startX;
+    var deltaY = event.clientY - this.dragState.startY;
+    this.applyPanelPosition(this.dragState.origLeft + deltaX, this.dragState.origTop + deltaY);
+  },
+
+  onDragEnd: function (event) {
+    if (!this.dragState) return;
+    if (event.pointerId !== this.dragState.pointerId) return;
+
+    this.stopPanelDrag();
+    this.savePanelPosition();
   },
 
   toggleTemplateMenu: function (event) {
