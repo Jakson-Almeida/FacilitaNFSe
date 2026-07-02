@@ -34,7 +34,7 @@ Os templates ficam salvos localmente no navegador do usuário.
 
 ## Status do projeto
 
-Versão inicial (`0.1.0`) com preenchimento automático nos **passos 1–3** do fluxo DPS (Pessoas, Serviço, Valores). O passo 4 (Emitir NFS-e) é apenas revisão.
+Versão `0.2.0` com painel flutuante no emissor, detecção de conflitos antes de sobrescrever campos, e botões **Avançar** / **Concluir** no fluxo DPS (passos 1–4).
 
 ### Templates incluídos
 
@@ -57,9 +57,15 @@ Arquivo de referência: `extension/templates/defaults.js`
 1. Clone o repositório
 2. Abra `chrome://extensions` no Chrome
 3. Ative **Modo do desenvolvedor**
-4. Clique em **Carregar sem compactação** e selecione a pasta `extension/`
+4. Clique em **Carregar sem compactação** e selecione a pasta **`extension`** dentro do clone:
+   - Correto: `...\FacilitaNFSe\extension`
+   - **Não** selecione a pasta raiz `FacilitaNFSe` (o Chrome exige o `manifest.json` na pasta escolhida)
 5. Acesse o [Emissor Nacional NFS-e](https://www.nfse.gov.br/EmissorNacional/) e inicie uma **Emissão Completa**
-6. Em cada passo (1–3), clique no ícone da extensão, escolha o template e **Aplicar neste passo**
+6. Use o **painel FacilitaNFSe** (canto superior direito da página) em cada passo:
+   - Escolha o template e clique **Aplicar template**
+   - Se houver campos já preenchidos com valores diferentes, escolha o que sobrescrever (ou marque **Sobrescrever todos**)
+   - Quando o passo estiver pronto, clique **Avançar** (no passo 3: *Avançar para revisão*)
+   - No passo 4 (revisão), clique **Concluir** após conferir os dados
 
 > **Importante:** recarregue a página do emissor após instalar ou atualizar a extensão, para o content script ser injetado.
 

@@ -147,3 +147,86 @@ FacilitaNFSe.clickButton = function (id) {
   button.click();
   return true;
 };
+
+FacilitaNFSe.getVisibleModal = function () {
+  var candidates = document.querySelectorAll(
+    ".bootbox.modal, .modal.in, .modal.show, .modal[style*='display: block']"
+  );
+  for (var i = 0; i < candidates.length; i++) {
+    var modal = candidates[i];
+    var style = window.getComputedStyle(modal);
+    if (style.display !== "none" && style.visibility !== "hidden") {
+      return modal;
+    }
+  }
+  return null;
+};
+
+FacilitaNFSe.clickModalButtonByText = function (label) {
+  var modal = FacilitaNFSe.getVisibleModal();
+  if (!modal) return false;
+
+  var target = label.trim().toLowerCase();
+  var buttons = modal.querySelectorAll("button");
+
+  for (var i = 0; i < buttons.length; i++) {
+    var text = buttons[i].textContent.trim().toLowerCase();
+    if (text === target) {
+      buttons[i].click();
+      return true;
+    }
+  }
+  return false;
+};
+
+FacilitaNFSe.waitAndClickModalButton = function (label, timeoutMs) {
+  var started = Date.now();
+  return new Promise(function (resolve) {
+    function poll() {
+      if (FacilitaNFSe.clickModalButtonByText(label)) {
+        FacilitaNFSe.sleep(400).then(resolve);
+        return;
+      }
+      if (Date.now() - started > timeoutMs) {
+        resolve();
+        return;
+      }
+      setTimeout(poll, 150);
+    }
+    poll();
+  });
+};
+
+FacilitaNFSe.dismissVisibleModal = function () {
+  if (FacilitaNFSe.clickModalButtonByText("Fechar")) {
+    return FacilitaNFSe.sleep(300);
+  }
+  if (FacilitaNFSe.clickModalButtonByText("Não")) {
+    return FacilitaNFSe.sleep(300);
+  }
+  return Promise.resolve();
+};
+
+/**
+ * Altera DataCompetencia e confirma o modal do portal, se aparecer.
+ */
+FacilitaNFSe.setCompetenceDate = function (value) {
+  var field = document.getElementById("DataCompetencia");
+  if (!field || !value) return Promise.resolve(false);
+
+  if (field.value === value) {
+    return Promise.resolve(true);
+  }
+
+  FacilitaNFSe.setInputById("DataCompetencia", value);
+  return FacilitaNFSe.sleep(300)
+    .then(function () {
+      return FacilitaNFSe.waitAndClickModalButton("Sim", 6000);
+    })
+    .then(function () {
+      return FacilitaNFSe.dismissVisibleModal();
+    })
+    .then(function () {
+      return field.value === value;
+    });
+};

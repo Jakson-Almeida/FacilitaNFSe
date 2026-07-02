@@ -1,56 +1,17 @@
 var stepLabel = document.getElementById("step-label");
-var templateSelect = document.getElementById("template-select");
-var valorGroup = document.getElementById("valor-group");
-var valorInput = document.getElementById("valor-servico");
-var applyBtn = document.getElementById("apply-btn");
+var openPanelBtn = document.getElementById("open-panel-btn");
 var statusEl = document.getElementById("status");
-
-var currentStep = null;
-var templates = [];
 
 var STEP_LABELS = {
   pessoas: "Passo 1 — Pessoas",
   servico: "Passo 2 — Serviço",
   tributacao: "Passo 3 — Valores",
-  emitir: "Passo 4 — Revisão (sem preenchimento)",
+  emitir: "Passo 4 — Revisão",
 };
 
 function setStatus(message, type) {
   statusEl.textContent = message || "";
   statusEl.className = "status" + (type ? " " + type : "");
-}
-
-function normalizeValor(value) {
-  var trimmed = (value || "").trim();
-  if (!trimmed) return "";
-  if (trimmed.indexOf(",") === -1 && /^\d+(\.\d+)?$/.test(trimmed)) {
-    return trimmed.replace(".", ",");
-  }
-  return trimmed;
-}
-
-function updateValorFieldVisibility() {
-  var template = templates.find(function (item) {
-    return item.id === templateSelect.value;
-  });
-  var needsValor =
-    currentStep === "tributacao" &&
-    template &&
-    template.tributacao &&
-    template.tributacao.valorServicoPrompt;
-
-  valorGroup.classList.toggle("hidden", !needsValor);
-}
-
-function renderTemplates(list) {
-  templateSelect.innerHTML = "";
-  list.forEach(function (template) {
-    var option = document.createElement("option");
-    option.value = template.id;
-    option.textContent = template.name;
-    templateSelect.appendChild(option);
-  });
-  updateValorFieldVisibility();
 }
 
 function getActiveTab() {
@@ -81,86 +42,32 @@ function sendToTab(tabId, message) {
   });
 }
 
-function detectStepFromTab(tab) {
-  if (!tab.url || tab.url.indexOf("/EmissorNacional/DPS/") === -1) {
-    currentStep = null;
-    stepLabel.textContent = "Abra uma página do Emissor Nacional (DPS).";
-    applyBtn.disabled = true;
-    return Promise.resolve();
-  }
+getActiveTab()
+  .then(function (tab) {
+    if (!tab.url || tab.url.indexOf("/EmissorNacional/DPS/") === -1) {
+      stepLabel.textContent = "Abra uma página do Emissor Nacional (DPS).";
+      openPanelBtn.disabled = true;
+      return;
+    }
 
-  return sendToTab(tab.id, { action: "getStep" })
-    .then(function (response) {
-      currentStep = response && response.step;
-      stepLabel.textContent = STEP_LABELS[currentStep] || "Página DPS desconhecida";
-      applyBtn.disabled = !currentStep || currentStep === "emitir";
-      updateValorFieldVisibility();
-    })
-    .catch(function () {
-      currentStep = FacilitaNFSe.detectStep(new URL(tab.url).pathname);
-      stepLabel.textContent = currentStep
-        ? STEP_LABELS[currentStep]
-        : "Recarregue a página do emissor e tente de novo.";
-      applyBtn.disabled = !currentStep || currentStep === "emitir";
-      updateValorFieldVisibility();
-    });
-}
+    var step = FacilitaNFSe.detectStep(new URL(tab.url).pathname);
+    stepLabel.textContent = STEP_LABELS[step] || "Página DPS";
+    return sendToTab(tab.id, { action: "togglePanel" });
+  })
+  .catch(function (error) {
+    stepLabel.textContent = "Recarregue a página do emissor.";
+    setStatus(error.message || String(error), "error");
+  });
 
-function applyTemplate() {
-  setStatus("Aplicando...", null);
-  applyBtn.disabled = true;
-
+openPanelBtn.addEventListener("click", function () {
   getActiveTab()
     .then(function (tab) {
-      var template = templates.find(function (item) {
-        return item.id === templateSelect.value;
-      });
-      if (!template) {
-        throw new Error("Selecione um template.");
-      }
-
-      var runtime = {};
-      if (
-        currentStep === "tributacao" &&
-        template.tributacao &&
-        template.tributacao.valorServicoPrompt
-      ) {
-        var valor = normalizeValor(valorInput.value);
-        if (!valor) {
-          throw new Error("Informe o valor do serviço.");
-        }
-        runtime.valorServico = valor;
-      }
-
-      return sendToTab(tab.id, {
-        action: "applyTemplate",
-        templateId: template.id,
-        runtime: runtime,
-      });
+      return sendToTab(tab.id, { action: "togglePanel" });
     })
-    .then(function (response) {
-      if (!response || !response.ok) {
-        throw new Error((response && response.error) || "Falha ao aplicar template.");
-      }
-      setStatus("Template aplicado com sucesso.", "ok");
+    .then(function () {
+      setStatus("Painel exibido na página.", "ok");
     })
     .catch(function (error) {
       setStatus(error.message || String(error), "error");
-    })
-    .finally(function () {
-      applyBtn.disabled = !currentStep || currentStep === "emitir";
     });
-}
-
-templateSelect.addEventListener("change", updateValorFieldVisibility);
-applyBtn.addEventListener("click", applyTemplate);
-
-FacilitaNFSe.loadTemplates().then(function (list) {
-  templates = list;
-  renderTemplates(list);
-  return getActiveTab();
-}).then(function (tab) {
-  return detectStepFromTab(tab);
-}).catch(function (error) {
-  setStatus(error.message || String(error), "error");
 });

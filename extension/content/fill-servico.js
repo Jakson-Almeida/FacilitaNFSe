@@ -24,24 +24,38 @@ FacilitaNFSe.waitForEnabled = function (id, timeoutMs) {
   });
 };
 
-FacilitaNFSe.fillServico = function (config) {
+FacilitaNFSe.fillServico = function (config, options) {
   if (!config) return Promise.resolve({ ok: true, skipped: true });
+  options = options || {};
 
   var chain = Promise.resolve();
+  var municipio = config.codigoMunicipioPrestacao || FacilitaNFSe.getEmitenteMunicipio();
 
   if (config.codigoPaisPrestacao) {
     chain = chain.then(function () {
-      FacilitaNFSe.setChosenSelect(
-        "LocalPrestacao_CodigoPaisPrestacao",
-        config.codigoPaisPrestacao
-      );
+      if (
+        FacilitaNFSe.shouldApplyField(
+          "paisPrestacao",
+          FacilitaNFSe.getSelectValue("LocalPrestacao_CodigoPaisPrestacao"),
+          config.codigoPaisPrestacao,
+          options
+        )
+      ) {
+        FacilitaNFSe.setChosenSelect(
+          "LocalPrestacao_CodigoPaisPrestacao",
+          config.codigoPaisPrestacao
+        );
+      }
       return FacilitaNFSe.sleep(300);
     });
   }
 
-  var municipio = config.codigoMunicipioPrestacao || FacilitaNFSe.getEmitenteMunicipio();
   if (municipio) {
     chain = chain.then(function () {
+      var current = FacilitaNFSe.getSelectValue("LocalPrestacao_CodigoMunicipioPrestacao");
+      if (!FacilitaNFSe.shouldApplyField("municipioPrestacao", current, municipio, options)) {
+        return null;
+      }
       return FacilitaNFSe.setSelect2BySearch(
         "LocalPrestacao_CodigoMunicipioPrestacao",
         municipio,
@@ -56,6 +70,17 @@ FacilitaNFSe.fillServico = function (config) {
       config.codigoTributacaoNacional.replace(/\./g, "").substring(0, 4);
 
     chain = chain.then(function () {
+      var current = FacilitaNFSe.getSelectValue("ServicoPrestado_CodigoTributacaoNacional");
+      if (
+        !FacilitaNFSe.shouldApplyField(
+          "codigoTributacao",
+          current,
+          config.codigoTributacaoNacional,
+          options
+        )
+      ) {
+        return null;
+      }
       return FacilitaNFSe.setSelect2BySearch(
         "ServicoPrestado_CodigoTributacaoNacional",
         searchTerm,
@@ -70,22 +95,40 @@ FacilitaNFSe.fillServico = function (config) {
 
   if (config.haExportacaoImunidadeNaoIncidencia != null) {
     chain = chain.then(function () {
-      FacilitaNFSe.clickRadio(
-        "ServicoPrestado.HaExportacaoImunidadeNaoIncidencia",
-        config.haExportacaoImunidadeNaoIncidencia
-      );
+      if (
+        FacilitaNFSe.shouldApplyField(
+          "imunidadeExportacao",
+          FacilitaNFSe.getRadioValue("ServicoPrestado.HaExportacaoImunidadeNaoIncidencia"),
+          config.haExportacaoImunidadeNaoIncidencia,
+          options
+        )
+      ) {
+        FacilitaNFSe.clickRadio(
+          "ServicoPrestado.HaExportacaoImunidadeNaoIncidencia",
+          config.haExportacaoImunidadeNaoIncidencia
+        );
+      }
       return FacilitaNFSe.sleep(200);
     });
   }
 
   if (config.descricao) {
     chain = chain.then(function () {
-      var textarea = document.getElementById("ServicoPrestado_Descricao");
-      if (textarea) {
-        textarea.readOnly = false;
-        textarea.disabled = false;
-        textarea.value = config.descricao;
-        FacilitaNFSe.dispatchInput(textarea);
+      if (
+        FacilitaNFSe.shouldApplyField(
+          "descricaoServico",
+          FacilitaNFSe.getInputValue("ServicoPrestado_Descricao"),
+          config.descricao,
+          options
+        )
+      ) {
+        var textarea = document.getElementById("ServicoPrestado_Descricao");
+        if (textarea) {
+          textarea.readOnly = false;
+          textarea.disabled = false;
+          textarea.value = config.descricao;
+          FacilitaNFSe.dispatchInput(textarea);
+        }
       }
       return FacilitaNFSe.sleep(200);
     });

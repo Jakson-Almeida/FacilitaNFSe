@@ -19,45 +19,90 @@ FacilitaNFSe.waitForFieldValue = function (id, timeoutMs) {
   });
 };
 
-FacilitaNFSe.fillPessoas = function (config) {
+FacilitaNFSe.fillPessoas = function (config, options) {
   if (!config) return Promise.resolve({ ok: true, skipped: true });
+  options = options || {};
 
   var chain = Promise.resolve();
 
   if (config.dataCompetencia) {
     var competence = FacilitaNFSe.resolveCompetence(config.dataCompetencia);
     chain = chain.then(function () {
-      FacilitaNFSe.setInputById("DataCompetencia", competence);
-      return FacilitaNFSe.sleep(200);
+      if (
+        !FacilitaNFSe.shouldApplyField(
+          "competence",
+          FacilitaNFSe.getInputValue("DataCompetencia"),
+          competence,
+          options
+        )
+      ) {
+        return null;
+      }
+      return FacilitaNFSe.setCompetenceDate(competence);
     });
   }
 
   if (config.tomador) {
     chain = chain.then(function () {
-      FacilitaNFSe.clickRadio("Tomador.LocalDomicilio", config.tomador.localDomicilio);
+      if (
+        FacilitaNFSe.shouldApplyField(
+          "tomadorLocal",
+          FacilitaNFSe.getRadioValue("Tomador.LocalDomicilio"),
+          config.tomador.localDomicilio,
+          options
+        )
+      ) {
+        FacilitaNFSe.clickRadio("Tomador.LocalDomicilio", config.tomador.localDomicilio);
+      }
       return FacilitaNFSe.sleep(400);
     });
 
     if (config.tomador.inscricao) {
       chain = chain.then(function () {
-        FacilitaNFSe.setInputById("Tomador_Inscricao", config.tomador.inscricao);
+        if (
+          FacilitaNFSe.shouldApplyField(
+            "tomadorInscricao",
+            FacilitaNFSe.getInputValue("Tomador_Inscricao"),
+            config.tomador.inscricao,
+            options
+          )
+        ) {
+          FacilitaNFSe.setInputById("Tomador_Inscricao", config.tomador.inscricao);
+        }
         return FacilitaNFSe.sleep(200);
       });
     }
 
     if (config.tomador.buscarInscricao) {
       chain = chain.then(function () {
-        FacilitaNFSe.clickButton("btn_Tomador_Inscricao_pesquisar");
-        return FacilitaNFSe.waitForFieldValue("Tomador_Nome", 10000).catch(function () {
-          return null;
+        var hasNome = !!FacilitaNFSe.getInputValue("Tomador_Nome");
+        var willChangeInscricao = FacilitaNFSe.shouldApplyField(
+          "tomadorInscricao",
+          FacilitaNFSe.getInputValue("Tomador_Inscricao"),
+          config.tomador.inscricao,
+          options
+        );
+        if (hasNome && !willChangeInscricao) return null;
+
+        return FacilitaNFSe.dismissVisibleModal().then(function () {
+          FacilitaNFSe.clickButton("btn_Tomador_Inscricao_pesquisar");
+          return FacilitaNFSe.waitForFieldValue("Tomador_Nome", 10000).catch(function () {
+            return null;
+          });
         });
       });
     }
 
     if (config.tomador.nome) {
       chain = chain.then(function () {
-        var nomeField = document.getElementById("Tomador_Nome");
-        if (nomeField && !nomeField.value.trim()) {
+        if (
+          FacilitaNFSe.shouldApplyField(
+            "tomadorNome",
+            FacilitaNFSe.getInputValue("Tomador_Nome"),
+            config.tomador.nome,
+            options
+          )
+        ) {
           FacilitaNFSe.setInputById("Tomador_Nome", config.tomador.nome);
         }
         return FacilitaNFSe.sleep(200);
@@ -66,26 +111,53 @@ FacilitaNFSe.fillPessoas = function (config) {
 
     if (config.tomador.informarEndereco && config.tomador.enderecoNacional) {
       chain = chain.then(function () {
-        FacilitaNFSe.setCheckbox("Tomador_InformarEndereco", true);
+        var endereco = config.tomador.enderecoNacional;
+        var needsEndereco = [
+          ["tomadorCep", "Tomador_EnderecoNacional_CEP", endereco.cep],
+          ["tomadorLogradouro", "Tomador_EnderecoNacional_Logradouro", endereco.logradouro],
+          ["tomadorNumero", "Tomador_EnderecoNacional_Numero", endereco.numero],
+          ["tomadorBairro", "Tomador_EnderecoNacional_Bairro", endereco.bairro],
+        ].some(function (item) {
+          return (
+            item[2] &&
+            FacilitaNFSe.shouldApplyField(
+              item[0],
+              FacilitaNFSe.getInputValue(item[1]),
+              item[2],
+              options
+            )
+          );
+        });
+
+        if (needsEndereco) {
+          FacilitaNFSe.setCheckbox("Tomador_InformarEndereco", true);
+        }
         return FacilitaNFSe.sleep(300);
       });
 
       var endereco = config.tomador.enderecoNacional;
       var enderecoFields = [
-        ["Tomador_EnderecoNacional_CEP", endereco.cep],
-        ["Tomador_EnderecoNacional_Logradouro", endereco.logradouro],
-        ["Tomador_EnderecoNacional_Numero", endereco.numero],
-        ["Tomador_EnderecoNacional_Complemento", endereco.complemento],
-        ["Tomador_EnderecoNacional_Bairro", endereco.bairro],
+        ["tomadorCep", "Tomador_EnderecoNacional_CEP", endereco.cep],
+        ["tomadorLogradouro", "Tomador_EnderecoNacional_Logradouro", endereco.logradouro],
+        ["tomadorNumero", "Tomador_EnderecoNacional_Numero", endereco.numero],
+        ["tomadorComplemento", "Tomador_EnderecoNacional_Complemento", endereco.complemento],
+        ["tomadorBairro", "Tomador_EnderecoNacional_Bairro", endereco.bairro],
       ];
 
       enderecoFields.forEach(function (pair) {
-        var fieldId = pair[0];
-        var value = pair[1];
+        var fieldKey = pair[0];
+        var fieldId = pair[1];
+        var value = pair[2];
         if (!value) return;
         chain = chain.then(function () {
-          var field = document.getElementById(fieldId);
-          if (field && !field.value.trim()) {
+          if (
+            FacilitaNFSe.shouldApplyField(
+              fieldKey,
+              FacilitaNFSe.getInputValue(fieldId),
+              value,
+              options
+            )
+          ) {
             FacilitaNFSe.setInputById(fieldId, value);
           }
           return FacilitaNFSe.sleep(150);
@@ -96,10 +168,19 @@ FacilitaNFSe.fillPessoas = function (config) {
 
   if (config.intermediario) {
     chain = chain.then(function () {
-      FacilitaNFSe.clickRadio(
-        "Intermediario.LocalDomicilio",
-        config.intermediario.localDomicilio
-      );
+      if (
+        FacilitaNFSe.shouldApplyField(
+          "intermediarioLocal",
+          FacilitaNFSe.getRadioValue("Intermediario.LocalDomicilio"),
+          config.intermediario.localDomicilio,
+          options
+        )
+      ) {
+        FacilitaNFSe.clickRadio(
+          "Intermediario.LocalDomicilio",
+          config.intermediario.localDomicilio
+        );
+      }
       return FacilitaNFSe.sleep(200);
     });
   }

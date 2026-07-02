@@ -1,13 +1,13 @@
 var FacilitaNFSe = self.FacilitaNFSe;
 
-FacilitaNFSe.applyTemplateOnPage = function (template, runtime) {
+FacilitaNFSe.applyTemplateOnPage = function (template, runtime, options) {
   var step = FacilitaNFSe.detectStep(window.location.pathname);
   if (!step) {
     return Promise.reject(new Error("Esta página não faz parte do fluxo DPS."));
   }
   if (step === "emitir") {
     return Promise.reject(
-      new Error("O passo Emitir NFS-e é só revisão. Volte a Pessoas, Serviço ou Valores.")
+      new Error("O passo Emitir NFS-e é só revisão. Use Concluir após revisar.")
     );
   }
 
@@ -16,26 +16,63 @@ FacilitaNFSe.applyTemplateOnPage = function (template, runtime) {
     return Promise.reject(new Error("Template sem dados para o passo: " + step));
   }
 
+  options = options || { overwriteAll: false, overwriteFields: [] };
+
   if (step === "pessoas") {
-    return FacilitaNFSe.fillPessoas(stepConfig);
+    return FacilitaNFSe.fillPessoas(stepConfig, options);
   }
   if (step === "servico") {
-    return FacilitaNFSe.fillServico(stepConfig);
+    return FacilitaNFSe.fillServico(stepConfig, options);
   }
   if (step === "tributacao") {
-    return FacilitaNFSe.fillTributacao(stepConfig, runtime);
+    return FacilitaNFSe.fillTributacao(stepConfig, runtime, options);
   }
 
   return Promise.reject(new Error("Passo não suportado: " + step));
 };
+
+FacilitaNFSe.observeStepChanges = function () {
+  var lastPath = window.location.pathname + window.location.search;
+  window.setInterval(function () {
+    var currentPath = window.location.pathname + window.location.search;
+    if (currentPath !== lastPath) {
+      lastPath = currentPath;
+      if (FacilitaNFSe.Panel && FacilitaNFSe.Panel.root) {
+        FacilitaNFSe.Panel.refresh();
+      }
+    }
+  }, 800);
+};
+
+FacilitaNFSe.initPanel();
+FacilitaNFSe.observeStepChanges();
 
 chrome.runtime.onMessage.addListener(function (message, _sender, sendResponse) {
   if (message.action === "getStep") {
     sendResponse({
       step: FacilitaNFSe.detectStep(window.location.pathname),
       url: window.location.href,
+      readyToAdvance: FacilitaNFSe.isStepReadyToAdvance(
+        FacilitaNFSe.detectStep(window.location.pathname)
+      ),
     });
     return false;
+  }
+
+  if (message.action === "scanTemplate") {
+    FacilitaNFSe.getTemplateById(message.templateId)
+      .then(function (template) {
+        if (!template) throw new Error("Template não encontrado.");
+        var step = FacilitaNFSe.detectStep(window.location.pathname);
+        sendResponse({
+          ok: true,
+          scan: FacilitaNFSe.scanStep(step, template, message.runtime || {}),
+        });
+      })
+      .catch(function (error) {
+        sendResponse({ ok: false, error: error.message || String(error) });
+      });
+    return true;
   }
 
   if (message.action === "applyTemplate") {
@@ -44,7 +81,11 @@ chrome.runtime.onMessage.addListener(function (message, _sender, sendResponse) {
         if (!template) {
           throw new Error("Template não encontrado.");
         }
-        return FacilitaNFSe.applyTemplateOnPage(template, message.runtime || {});
+        return FacilitaNFSe.applyTemplateOnPage(
+          template,
+          message.runtime || {},
+          message.options || {}
+        );
       })
       .then(function (result) {
         sendResponse({ ok: true, result: result });
@@ -53,6 +94,17 @@ chrome.runtime.onMessage.addListener(function (message, _sender, sendResponse) {
         sendResponse({ ok: false, error: error.message || String(error) });
       });
     return true;
+  }
+
+  if (message.action === "togglePanel") {
+    if (!FacilitaNFSe.Panel.root) {
+      FacilitaNFSe.initPanel();
+    } else {
+      FacilitaNFSe.Panel.root.classList.remove("fn-collapsed");
+      document.getElementById("fn-toggle").textContent = "−";
+    }
+    sendResponse({ ok: true });
+    return false;
   }
 
   return false;
