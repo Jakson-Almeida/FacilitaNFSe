@@ -1,0 +1,6 @@
+# Variáveis de ambiente locais
+.env
+.env.*
+
+# Pesquisa local do portal NFSe (contém HTML e dados de sessão)
+docs/pesquisa/
