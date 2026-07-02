@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "FacilitaNFSe",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Preenche formulários do Emissor Nacional NFS-e com templates salvos localmente.",
   "permissions": ["storage"],
   "host_permissions": ["https://www.nfse.gov.br/*"],
@@ -26,6 +26,7 @@
       "js": [
         "shared/constants.js",
         "shared/dates.js",
+        "shared/template-utils.js",
         "shared/steps.js",
         "shared/storage.js",
         "content/dom-helpers.js",
@@ -34,6 +35,7 @@
         "content/fill-pessoas.js",
         "content/fill-servico.js",
         "content/fill-tributacao.js",
+        "content/template-editor.js",
         "content/panel.js",
         "content/content.js"
       ],

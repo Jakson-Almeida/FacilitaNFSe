@@ -5,7 +5,7 @@
  *   id: string,
  *   name: string,
  *   pessoas?: {
- *     dataCompetencia?: string | "previousMonth",
+ *     dataCompetencia?: string | "previousMonth" | "currentMonth",
  *     tomador?: {
  *       localDomicilio: "0" | "1" | "2",
  *       inscricao?: string,           // CPF/CNPJ
@@ -43,7 +43,7 @@ FacilitaNFSe.DEFAULT_TEMPLATES = [
     id: "shopee-afiliados",
     name: "Shopee — Programa de Afiliados",
     pessoas: {
-      dataCompetencia: "previousMonth",
+      dataCompetencia: "currentMonth",
       tomador: {
         localDomicilio: FacilitaNFSe.LOCAL_DOMICILIO.BRASIL,
         inscricao: "35.635.824/0001-12",

@@ -201,6 +201,86 @@
   display: none;
 }
 
+#facilita-nfse-panel.fn-editor-open {
+  width: 400px;
+}
+
 #facilita-nfse-panel.fn-collapsed {
   width: auto;
+}
+
+#facilita-nfse-panel .fn-field {
+  margin-bottom: 10px;
+}
+
+#facilita-nfse-panel .fn-fieldset {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px;
+  margin: 0;
+}
+
+#facilita-nfse-panel .fn-fieldset legend {
+  font-weight: 700;
+  padding: 0 4px;
+}
+
+#facilita-nfse-panel .fn-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+#facilita-nfse-panel .fn-editor-header h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+#facilita-nfse-panel .fn-link-btn {
+  border: none;
+  background: none;
+  color: #2563eb;
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+#facilita-nfse-panel .fn-editor-scroll {
+  max-height: 420px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 2px;
+}
+
+#facilita-nfse-panel textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+  resize: vertical;
+}
+
+#facilita-nfse-panel .fn-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  margin: 0;
+}
+
+#facilita-nfse-panel .fn-check input {
+  width: auto;
+}
+
+#facilita-nfse-panel .fn-custom-date {
+  margin-top: 8px;
+}
+
+#facilita-nfse-panel .fn-actions-row .fn-btn.fn-hidden {
+  display: none;
 }

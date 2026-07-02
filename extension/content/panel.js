@@ -22,11 +22,27 @@ FacilitaNFSe.Panel = {
       '<div id="fn-main-controls">' +
       "<label for=\"fn-template\">Template</label>" +
       '<select id="fn-template"></select>' +
+      '<div id="fn-template-actions" class="fn-actions-row">' +
+      '<button type="button" class="fn-btn fn-btn-secondary" id="fn-new-template">Novo</button>' +
+      '<button type="button" class="fn-btn fn-btn-secondary" id="fn-edit-template">Editar</button>' +
+      '<button type="button" class="fn-btn fn-btn-secondary" id="fn-duplicate-template">Duplicar</button>' +
+      "</div>" +
       '<div id="fn-valor-group" class="fn-hidden">' +
       "<label for=\"fn-valor\">Valor do serviço (R$)</label>" +
       '<input id="fn-valor" type="text" inputmode="decimal" placeholder="150,00" />' +
       "</div>" +
       '<button type="button" class="fn-btn fn-btn-primary" id="fn-apply">Aplicar template</button>' +
+      "</div>" +
+      '<div id="fn-editor" class="fn-hidden">' +
+      '<div class="fn-editor-header">' +
+      '<h3 id="fn-editor-title">Novo template</h3>' +
+      '<button type="button" class="fn-link-btn" id="fn-editor-back">Voltar</button>' +
+      "</div>" +
+      '<div class="fn-editor-scroll" id="fn-editor-form"></div>' +
+      '<div class="fn-actions-row">' +
+      '<button type="button" class="fn-btn fn-btn-secondary fn-hidden" id="fn-editor-delete">Excluir</button>' +
+      '<button type="button" class="fn-btn fn-btn-primary" id="fn-editor-save">Salvar template</button>' +
+      "</div>" +
       "</div>" +
       '<div id="fn-conflicts" class="fn-conflicts fn-hidden">' +
       "<h3>Campos já preenchidos</h3>" +
@@ -54,6 +70,18 @@ FacilitaNFSe.Panel = {
     document.getElementById("fn-advance").addEventListener("click", this.onAdvanceClick.bind(this));
     document.getElementById("fn-finish").addEventListener("click", this.onFinishClick.bind(this));
     document.getElementById("fn-template").addEventListener("change", this.onTemplateChange.bind(this));
+    document.getElementById("fn-new-template").addEventListener("click", this.onNewTemplate.bind(this));
+    document.getElementById("fn-edit-template").addEventListener("click", this.onEditTemplate.bind(this));
+    document.getElementById("fn-duplicate-template").addEventListener("click", this.onDuplicateTemplate.bind(this));
+    document.getElementById("fn-editor-back").addEventListener("click", function () {
+      FacilitaNFSe.TemplateEditor.close();
+    });
+    document.getElementById("fn-editor-save").addEventListener("click", function () {
+      FacilitaNFSe.TemplateEditor.save();
+    });
+    document.getElementById("fn-editor-delete").addEventListener("click", function () {
+      FacilitaNFSe.TemplateEditor.remove();
+    });
 
     FacilitaNFSe.loadTemplates().then(
       function (templates) {
@@ -128,6 +156,28 @@ FacilitaNFSe.Panel = {
     document.getElementById("fn-valor-group").classList.toggle("fn-hidden", !needsValor);
   },
 
+  onDuplicateTemplate: function () {
+    var template = this.getSelectedTemplate();
+    if (!template) {
+      this.setStatus("Selecione um template para duplicar.", "error");
+      return;
+    }
+    FacilitaNFSe.TemplateEditor.openDuplicate(template);
+  },
+
+  onNewTemplate: function () {
+    FacilitaNFSe.TemplateEditor.openNew();
+  },
+
+  onEditTemplate: function () {
+    var template = this.getSelectedTemplate();
+    if (!template) {
+      this.setStatus("Selecione um template para editar.", "error");
+      return;
+    }
+    FacilitaNFSe.TemplateEditor.openEdit(template);
+  },
+
   onTemplateChange: function () {
     this.selectedTemplateId = document.getElementById("fn-template").value;
     this.updateValorVisibility();
@@ -135,6 +185,10 @@ FacilitaNFSe.Panel = {
   },
 
   refresh: function () {
+    if (document.getElementById("fn-editor") && !document.getElementById("fn-editor").classList.contains("fn-hidden")) {
+      return;
+    }
+
     this.currentStep = FacilitaNFSe.detectStep(window.location.pathname);
     var stepLabel = document.getElementById("fn-step-label");
     var applyBtn = document.getElementById("fn-apply");

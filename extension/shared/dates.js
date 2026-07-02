@@ -12,9 +12,22 @@ FacilitaNFSe.getPreviousMonthCompetence = function () {
   return "01/" + month + "/" + year;
 };
 
+/**
+ * Primeiro dia do mês atual (dd/mm/aaaa).
+ */
+FacilitaNFSe.getCurrentMonthCompetence = function () {
+  var date = new Date();
+  var month = String(date.getMonth() + 1).padStart(2, "0");
+  var year = date.getFullYear();
+  return "01/" + month + "/" + year;
+};
+
 FacilitaNFSe.resolveCompetence = function (value) {
   if (value === "previousMonth") {
     return FacilitaNFSe.getPreviousMonthCompetence();
+  }
+  if (value === "currentMonth") {
+    return FacilitaNFSe.getCurrentMonthCompetence();
   }
   return value || "";
 };

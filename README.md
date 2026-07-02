@@ -34,13 +34,13 @@ Os templates ficam salvos localmente no navegador do usuário.
 
 ## Status do projeto
 
-Versão `0.2.0` com painel flutuante no emissor, detecção de conflitos antes de sobrescrever campos, e botões **Avançar** / **Concluir** no fluxo DPS (passos 1–4).
+Versão `0.3.0` com painel flutuante no emissor, detecção de conflitos, botões **Avançar** / **Concluir**, e **criação/edição de templates** salvos localmente.
 
 ### Templates incluídos
 
 | Template | Uso |
 |----------|-----|
-| **Shopee — Programa de Afiliados** | Tomador Shopee (CNPJ `35.635.824/0001-12`), código `17.06.01`, competência do mês anterior, valor informado na hora |
+| **Shopee — Programa de Afiliados** | Tomador Shopee (CNPJ `35.635.824/0001-12`), código `17.06.01`, competência do mês atual (dia 01), valor informado na hora |
 
 ### Estrutura de um template
 
@@ -66,6 +66,17 @@ Arquivo de referência: `extension/templates/defaults.js`
    - Se houver campos já preenchidos com valores diferentes, escolha o que sobrescrever (ou marque **Sobrescrever todos**)
    - Quando o passo estiver pronto, clique **Avançar** (no passo 3: *Avançar para revisão*)
    - No passo 4 (revisão), clique **Concluir** após conferir os dados
+
+### Gerenciar templates
+
+No painel, use os botões **Novo**, **Editar** e **Duplicar** abaixo da lista de templates:
+
+- **Novo** — cria um template em branco
+- **Editar** — altera o template selecionado (incluindo o Shopee; salva uma cópia personalizada)
+- **Duplicar** — copia um template existente com novo nome/ID
+- **Restaurar padrão** — ao editar um template built-in modificado, remove sua personalização
+
+Os templates customizados ficam salvos no navegador (`chrome.storage.local`).
 
 > **Importante:** recarregue a página do emissor após instalar ou atualizar a extensão, para o content script ser injetado.
 
