@@ -6,6 +6,7 @@ FacilitaNFSe.Panel = {
   currentStep: null,
   pendingApply: null,
   selectedTemplateId: null,
+  selectedTemplateStorageKey: "facilita-nfse-selected-template",
   emissionPending: false,
   emissionAutoClicked: false,
   dragState: null,
@@ -304,6 +305,38 @@ FacilitaNFSe.Panel = {
     status.className = "fn-status" + (type ? " " + type : "");
   },
 
+  restoreSelectedTemplateId: function () {
+    if (this.selectedTemplateId) return;
+    var saved = sessionStorage.getItem(this.selectedTemplateStorageKey);
+    if (!saved) return;
+    if (
+      this.templates.some(function (template) {
+        return template.id === saved;
+      })
+    ) {
+      this.selectedTemplateId = saved;
+    }
+  },
+
+  persistSelectedTemplateId: function (id) {
+    if (!id) {
+      this.selectedTemplateId = null;
+      sessionStorage.removeItem(this.selectedTemplateStorageKey);
+      return;
+    }
+    this.selectedTemplateId = id;
+    sessionStorage.setItem(this.selectedTemplateStorageKey, id);
+  },
+
+  syncTemplateSelect: function () {
+    var select = document.getElementById("fn-template");
+    if (!select) return;
+    this.restoreSelectedTemplateId();
+    if (this.selectedTemplateId) {
+      select.value = this.selectedTemplateId;
+    }
+  },
+
   renderTemplates: function () {
     var select = document.getElementById("fn-template");
     select.innerHTML = "";
@@ -313,9 +346,7 @@ FacilitaNFSe.Panel = {
       option.textContent = template.name;
       select.appendChild(option);
     });
-    if (this.selectedTemplateId) {
-      select.value = this.selectedTemplateId;
-    }
+    this.syncTemplateSelect();
   },
 
   getSelectedTemplate: function () {
@@ -413,7 +444,7 @@ FacilitaNFSe.Panel = {
 
   onTemplateChange: function () {
     this.hideTemplateMenu();
-    this.selectedTemplateId = document.getElementById("fn-template").value;
+    this.persistSelectedTemplateId(document.getElementById("fn-template").value);
     this.updatePromptFieldsVisibility();
     this.hideConflicts();
   },
@@ -469,6 +500,7 @@ FacilitaNFSe.Panel = {
     this.updateNavigationButtons();
     this.hideConflicts();
     this.hideEmitConfirm();
+    this.syncTemplateSelect();
 
     if (this.emissionPending) {
       this.setStatus("Emitindo NFS-e...", "info");
@@ -609,6 +641,8 @@ FacilitaNFSe.Panel = {
       this.setStatus("Selecione um template.", "error");
       return;
     }
+
+    this.persistSelectedTemplateId(template.id);
 
     var runtime = this.buildRuntime(template);
 

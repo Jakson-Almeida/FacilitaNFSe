@@ -332,7 +332,7 @@ FacilitaNFSe.TemplateEditor = {
     var self = this;
     return FacilitaNFSe.loadTemplates().then(function (templates) {
       FacilitaNFSe.Panel.templates = templates;
-      FacilitaNFSe.Panel.selectedTemplateId = template.id;
+      FacilitaNFSe.Panel.persistSelectedTemplateId(template.id);
       FacilitaNFSe.Panel.renderTemplates();
       self.close();
       FacilitaNFSe.Panel.setStatus('Template "' + template.name + '" salvo.', "ok");
@@ -355,7 +355,7 @@ FacilitaNFSe.TemplateEditor = {
       })
       .then(function (templates) {
         FacilitaNFSe.Panel.templates = templates;
-        FacilitaNFSe.Panel.selectedTemplateId = templates[0] ? templates[0].id : null;
+        FacilitaNFSe.Panel.persistSelectedTemplateId(templates[0] ? templates[0].id : null);
         FacilitaNFSe.Panel.renderTemplates();
         self.close();
         FacilitaNFSe.Panel.setStatus("Template removido.", "ok");
