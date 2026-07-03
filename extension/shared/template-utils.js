@@ -15,6 +15,7 @@ FacilitaNFSe.createEmptyTemplate = function () {
       tomador: {
         localDomicilio: FacilitaNFSe.LOCAL_DOMICILIO.NAO_INFORMADO,
         inscricao: "",
+        inscricaoPrompt: false,
         nome: "",
         buscarInscricao: false,
         informarEndereco: false,
@@ -96,6 +97,10 @@ FacilitaNFSe.sanitizeTemplate = function (template) {
     var tomador = clean.pessoas.tomador;
     tomador.inscricao = String(tomador.inscricao || "").trim();
     tomador.nome = String(tomador.nome || "").trim();
+    tomador.inscricaoPrompt = !!tomador.inscricaoPrompt;
+    if (tomador.inscricaoPrompt) {
+      delete tomador.inscricao;
+    }
     if (!tomador.informarEndereco) {
       delete tomador.enderecoNacional;
     } else if (tomador.enderecoNacional) {

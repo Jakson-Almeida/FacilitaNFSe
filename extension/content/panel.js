@@ -48,6 +48,10 @@ FacilitaNFSe.Panel = {
       "</div>" +
       "</div>" +
       "</div>" +
+      '<div id="fn-tomador-group" class="fn-hidden">' +
+      "<label for=\"fn-tomador-inscricao\">CPF/CNPJ do tomador</label>" +
+      '<input id="fn-tomador-inscricao" type="text" inputmode="numeric" placeholder="00.000.000/0001-00" />' +
+      "</div>" +
       '<div id="fn-valor-group" class="fn-hidden">' +
       "<label for=\"fn-valor\">Valor do serviço (R$)</label>" +
       '<input id="fn-valor" type="text" inputmode="decimal" placeholder="150,00" />' +
@@ -330,8 +334,22 @@ FacilitaNFSe.Panel = {
     return trimmed;
   },
 
+  normalizeInscricao: function (value) {
+    return String(value || "").trim();
+  },
+
   buildRuntime: function (template) {
     var runtime = {};
+    if (
+      this.currentStep === "pessoas" &&
+      template.pessoas &&
+      template.pessoas.tomador &&
+      template.pessoas.tomador.inscricaoPrompt
+    ) {
+      runtime.tomadorInscricao = this.normalizeInscricao(
+        document.getElementById("fn-tomador-inscricao").value
+      );
+    }
     if (
       this.currentStep === "tributacao" &&
       template.tributacao &&
@@ -340,6 +358,22 @@ FacilitaNFSe.Panel = {
       runtime.valorServico = this.normalizeValor(document.getElementById("fn-valor").value);
     }
     return runtime;
+  },
+
+  updatePromptFieldsVisibility: function () {
+    this.updateTomadorVisibility();
+    this.updateValorVisibility();
+  },
+
+  updateTomadorVisibility: function () {
+    var template = this.getSelectedTemplate();
+    var needsTomador =
+      this.currentStep === "pessoas" &&
+      template &&
+      template.pessoas &&
+      template.pessoas.tomador &&
+      template.pessoas.tomador.inscricaoPrompt;
+    document.getElementById("fn-tomador-group").classList.toggle("fn-hidden", !needsTomador);
   },
 
   updateValorVisibility: function () {
@@ -380,7 +414,7 @@ FacilitaNFSe.Panel = {
   onTemplateChange: function () {
     this.hideTemplateMenu();
     this.selectedTemplateId = document.getElementById("fn-template").value;
-    this.updateValorVisibility();
+    this.updatePromptFieldsVisibility();
     this.hideConflicts();
   },
 
@@ -431,7 +465,7 @@ FacilitaNFSe.Panel = {
     mainControls.classList.toggle("fn-hidden", !onEditableStep);
     applyBtn.disabled = !onEditableStep;
 
-    this.updateValorVisibility();
+    this.updatePromptFieldsVisibility();
     this.updateNavigationButtons();
     this.hideConflicts();
     this.hideEmitConfirm();
@@ -577,6 +611,18 @@ FacilitaNFSe.Panel = {
     }
 
     var runtime = this.buildRuntime(template);
+
+    if (
+      this.currentStep === "pessoas" &&
+      template.pessoas &&
+      template.pessoas.tomador &&
+      template.pessoas.tomador.inscricaoPrompt &&
+      !runtime.tomadorInscricao
+    ) {
+      this.setStatus("Informe o CPF/CNPJ do tomador.", "error");
+      return;
+    }
+
     if (
       this.currentStep === "tributacao" &&
       template.tributacao &&

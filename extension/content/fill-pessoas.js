@@ -19,9 +19,15 @@ FacilitaNFSe.waitForFieldValue = function (id, timeoutMs) {
   });
 };
 
-FacilitaNFSe.fillPessoas = function (config, options) {
+FacilitaNFSe.fillPessoas = function (config, runtime, options) {
   if (!config) return Promise.resolve({ ok: true, skipped: true });
   options = options || {};
+  runtime = runtime || {};
+
+  if (runtime.tomadorInscricao && config.tomador) {
+    config = FacilitaNFSe.cloneTemplate({ pessoas: config }).pessoas;
+    config.tomador.inscricao = runtime.tomadorInscricao;
+  }
 
   var chain = Promise.resolve();
 

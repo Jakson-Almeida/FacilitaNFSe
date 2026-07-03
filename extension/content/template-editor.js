@@ -155,6 +155,14 @@ FacilitaNFSe.TemplateEditor = {
           { value: "2", label: "Exterior" },
         ])
       ) +
+      this.field(
+        "",
+        this.checkbox(
+          "pessoas.tomador.inscricaoPrompt",
+          !!tomador.inscricaoPrompt,
+          "Pedir CPF/CNPJ do tomador na hora"
+        )
+      ) +
       this.field("Tomador — CPF/CNPJ", this.input("pessoas.tomador.inscricao", tomador.inscricao)) +
       this.field("Tomador — Nome/Razão Social", this.input("pessoas.tomador.nome", tomador.nome)) +
       this.field(

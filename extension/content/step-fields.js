@@ -97,8 +97,9 @@ FacilitaNFSe.classifyField = function (currentValue, proposedValue, fieldKey) {
   return "conflict";
 };
 
-FacilitaNFSe.buildPessoasFields = function (config) {
+FacilitaNFSe.buildPessoasFields = function (config, runtime) {
   if (!config) return [];
+  runtime = runtime || {};
 
   var fields = [];
 
@@ -130,7 +131,7 @@ FacilitaNFSe.buildPessoasFields = function (config) {
       },
     });
 
-    if (config.tomador.inscricao) {
+    if (config.tomador.inscricao || config.tomador.inscricaoPrompt) {
       fields.push({
         key: "tomadorInscricao",
         label: "Tomador — CPF/CNPJ",
@@ -138,7 +139,7 @@ FacilitaNFSe.buildPessoasFields = function (config) {
           return FacilitaNFSe.getInputValue("Tomador_Inscricao");
         },
         getProposed: function () {
-          return config.tomador.inscricao;
+          return runtime.tomadorInscricao || config.tomador.inscricao || "";
         },
       });
     }
@@ -351,7 +352,7 @@ FacilitaNFSe.formatTipoValorTributos = function (value) {
 };
 
 FacilitaNFSe.buildStepFields = function (step, config, runtime) {
-  if (step === "pessoas") return FacilitaNFSe.buildPessoasFields(config);
+  if (step === "pessoas") return FacilitaNFSe.buildPessoasFields(config, runtime);
   if (step === "servico") return FacilitaNFSe.buildServicoFields(config);
   if (step === "tributacao") return FacilitaNFSe.buildTributacaoFields(config, runtime);
   return [];

@@ -19,7 +19,7 @@ FacilitaNFSe.applyTemplateOnPage = function (template, runtime, options) {
   options = options || { overwriteAll: false, overwriteFields: [] };
 
   if (step === "pessoas") {
-    return FacilitaNFSe.fillPessoas(stepConfig, options);
+    return FacilitaNFSe.fillPessoas(stepConfig, runtime, options);
   }
   if (step === "servico") {
     return FacilitaNFSe.fillServico(stepConfig, options);
